@@ -10,6 +10,7 @@ const port = process.env.Port || 4000;
 
 // self created modules
 const { connection } = require("./database/connection");
+const { UserRouter } = require("./routes/user");
 
 //------------------------------- gloabal middlewares
 // gloabal errror handler
@@ -25,11 +26,11 @@ app.use(
 app.use(cookieParser());
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
-  .split(",")
-  .map((origin) => {
-    return origin.trim();
-  })
-  .filter(Boolean);
+.split(",")
+.map((origin) => {
+  return origin.trim();
+})
+.filter(Boolean);
 
 const mode = process.env.MODE;
 
@@ -48,6 +49,12 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE"],
   })
 );
+
+// routing
+
+app.use("/api/v1/user",UserRouter)
+
+
 
 // db connwction
 connection()
