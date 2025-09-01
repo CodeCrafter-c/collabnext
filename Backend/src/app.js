@@ -11,6 +11,7 @@ const port = process.env.Port || 4000;
 // self created modules
 const { connection } = require("./database/connection");
 const { UserRouter } = require("./routes/user");
+const { projectRouter } = require("./routes/project");
 
 //------------------------------- gloabal middlewares
 // gloabal errror handler
@@ -53,7 +54,7 @@ app.use(
 // routing
 
 app.use("/api/v1/user",UserRouter)
-
+app.use("/api/v1/project",projectRouter)
 
 
 // db connwction

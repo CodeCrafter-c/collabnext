@@ -2,51 +2,56 @@ const mongoose=require("mongoose");
 const {User}=require("./user")
 
 
-const projectSchema=mongoose.Schema({
 
-    projectName:{
-        type:String,
-        required:true,
-        trim:true,
+const projectSchema = new mongoose.Schema(
+  {
+    projectName: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    projectDescription:{
-        type:String,
-        trim:true,
+    projectDescription: {
+      type: String,
+      trim: true,
+      required: true,
+      default: "",
     },
-    deadLine:{
-        type:Date,
-        required:true
+    deadLine: {
+      type: Date, // optional
     },
-
-    status:{
-        type:String,
-        enum:["not started","in progress","completed","on hold"],
-        default:"not started"
+    status: {
+      type: String,
+      enum: ["not started", "in progress", "completed", "on hold"],
+      default: "not started",
     },
-
-    admin:[{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"User"
-    }],
-    members:[
-        {
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"User"
-        }
+    admin: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
     ],
-    progress:{
-        type:Number,
-        min:0,
-        max:100,
-        default:0
-    }
-},{
-    timestamps:true
-})
+    members: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    progress: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const Project = mongoose.model("Project", projectSchema);
+
+module.exports = { Project };
 
 
-const Project=mongoose.model("Project",projectSchema);
 
-module.exports={
-    Project
-}

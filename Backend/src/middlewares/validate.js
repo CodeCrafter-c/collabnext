@@ -2,7 +2,7 @@ const { ZodError } = require("zod");
 
 const validate = (schema) => (req, res, next) => {
   try {
-    schema.parse(req.body); // validate body
+ schema.parse(req.body, { context: { userId: req.user._id } }); // validate body
     next();
   } catch (err) {
     if (err instanceof ZodError) {
