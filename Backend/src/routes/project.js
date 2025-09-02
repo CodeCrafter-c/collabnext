@@ -1,6 +1,6 @@
 const express=require("express");
 const { verifyAccess } = require("../middlewares/auth");
-const { createProjectHandler, getMyProjects } = require("../controllers/projectController");
+const { createProjectHandler, getMyProjects, getProjectDetails } = require("../controllers/projectController");
 const { validate } = require("uuid");
 const { createProjectSchema } = require("../validations/projectValidation");
 const projectRouter=express.Router;
@@ -15,14 +15,22 @@ projectRouter.get("/all",verifyAccess,getMyProjects)
 
 
 // get project/:id  details about spcific project
+projectRouter.get("/:id",verifyAccess,getProjectDetails)
 
 
-
-// PUT /projects/:id → Update project details (title, description, etc.)-- only admins
-
+// PUT /projects/:id → Update project details (title, description, deadline.)-- only admins
+projectRouter.put("/:id",verifyAccess)
 
 
 //  DELETE /projects/:id → Delete a project ---  only admins
+
+
+
+
+// POST /projects/:projectId/admins → add admin
+
+
+// DELETE /projects/:projectId/admins/:userId → remove admin
 
 
 

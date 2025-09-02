@@ -1,3 +1,4 @@
+const { memo } = require("react");
 const { Invite } = require("../models/invites");
 const { Project } = require("../models/projects");
 const { ApiError } = require("../utils/apiError");
@@ -67,12 +68,12 @@ const getMyProjects = asyncHandler(async (req, res, next) => {
   });
 
   const adminProjects = allProjects.filter((project) =>
-  project.admin.some((admin) => admin.toString() === user._id.toString())
-);
+    project.admin.some((admin) => admin.toString() === user._id.toString())
+  );
 
-const memberProjects = allProjects.filter((project) =>
-  project.members.some((member) => member.toString() === user._id.toString())
-);
+  const memberProjects = allProjects.filter((project) =>
+    project.members.some((member) => member.toString() === user._id.toString())
+  );
 
   const projects = {
     adminProjects,
@@ -82,7 +83,103 @@ const memberProjects = allProjects.filter((project) =>
   res.json(200, "projects fetched completely", projects);
 });
 
+const getProjectDetails = asyncHandler(async (req, res, next) => {
+  const projectId = req.params.id;
+
+  // check if project id exists
+  if (!projectId) {
+    throw new ApiError(400, "no project Id");
+  }
+
+  // find project with project id
+  const project = await Project.aggregate([
+    {
+      // find the project with the projectId
+      // projectId is string so we need to covert it to ObjectID manully
+      $match: { _id: new mongoose.Types.ObjectId(projectId) },
+    },
+
+    // lookup members to get full details
+    {
+      $lookup: {
+        from: "Users",
+        localField: "members",
+        foreignField: "_id",
+        as: "members",
+      },
+    },
+
+    // find all the tasks associated with that project
+    {
+      $lookup: {
+        from: "Task",
+        localField: "_id",
+        foreignField: "project",
+        as: "tasks",
+      },
+    },
+    // to check if task belong to logged in user or not
+    {
+      $addFields: {
+        tasks: {
+          $map: {
+            input: "$tasks",
+            as: "task",
+            in: {
+              $mergeObjects: [
+                "$$task",
+                {
+                  isMine: {
+                    $in: [new mongoose.Types.ObjectId(req.user), "$$task.AssignedTO"], 
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+        // sort tasks
+    {
+      $addFields: {
+        tasks: {
+          $sortArray: {
+            input: "$tasks",
+            sortBy: { isMine: -1, dueDate: 1 },
+          },
+        },
+      },
+    },
+    // Step 4: Add isAdmin flag at project level
+    {
+      $addFields: {
+        isAdmin: {
+          $in: [new mongoose.Types.ObjectId(req.user), "$admin"],
+        },
+      },
+    },
+  ]);
+
+  // check if project exists with that projectID
+  if (!project.length) {
+    throw new ApiError(404, "no project found");
+  }
+
+  const projectData = project[0];
+
+  const isMember = projectData.members.some((member) => {
+    return member._id.toString() === req.user.toString();
+  });
+
+  if (!isMember) {
+    throw new ApiError(403, "you dont have access to this project");
+  }
+
+  res.json(new ApiResponse(200, "project Data fetched", project));
+});
+
 module.exports = {
   createProjectHandler,
-  getMyProjects
+  getMyProjects,
+  getProjectDetails
 };
