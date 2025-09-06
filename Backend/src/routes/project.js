@@ -1,6 +1,6 @@
 const express=require("express");
 const { verifyAccess } = require("../middlewares/auth");
-const { createProjectHandler, getMyProjects, getProjectDetails, updateProjectDetailsHandler, archiveProjectHandler,  makeAdminHandler, removeAdminHandler, rejectPendingArchiveRequestHandler, approvePendingArchiveRequestHandler } = require("../controllers/projectController");
+const { createProjectHandler, getMyProjects, getProjectDetails, updateProjectDetailsHandler, archiveProjectHandler,  makeAdminHandler, removeAdminHandler, rejectPendingArchiveRequestHandler, approvePendingArchiveRequestHandler, adminRemoveMemberHandler, memberLeavingProjectHandler } = require("../controllers/projectController");
 const { validate } = require("uuid");
 const { createProjectSchema, updateProjectDetailsSchema } = require("../validations/projectValidation");
 const projectRouter=express.Router;
@@ -19,7 +19,7 @@ projectRouter.get("/:id",verifyAccess,getProjectDetails)
 projectRouter.put("/:id",verifyAccess,validate(updateProjectDetailsSchema),updateProjectDetailsHandler);
 
 //  DELETE /projects/:id → Delete a project ---  only admins
-projectRouter.delete(":/id/archive",verifyAccess,archiveProjectHandler)
+projectRouter.delete("/:id/archive",verifyAccess,archiveProjectHandler)
 
 
 // POST /projects/:id/archive/approve → other admins approve --- only admins
@@ -46,7 +46,15 @@ projectRouter.post(":/id/adminRemoval/approve/adminId",verifyAccess,approvePendi
 projectRouter.post("/:id/adminRemoval/reject/:adminId",verifyAccess,rejectPendingArchiveRequestHandler)
 
 
-// Remove Member (DELETE /projects/:id/members/:userId) --- only admin
+// Remove Member (DELETE /projects/:id.remove/member/:userId) --- only admin
+projectRouter.delete("/:id/remove/member/:userId",verifyAccess,adminRemoveMemberHandler);
+
+
+// delete /projects/:id/leave-- Member leaves project (not fo   r admins).
+projectRouter.delete("/:id/leave/member/:userId",verifyAccess,memberLeavingProjectHandler)
+
+
+// transferOwnership route
 
 
 
@@ -59,11 +67,6 @@ projectRouter.post("/:id/adminRemoval/reject/:adminId",verifyAccess,rejectPendin
 
 
 // Decline Invite (POST /projects/invite/:token/decline)
-
-
-
-
-// POST /projects/:id/leave-- Member leaves project (not for admins).
 
 
 

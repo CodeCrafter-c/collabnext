@@ -515,10 +515,10 @@ const removeAdminHandler = asyncHandler(async (req, res) => {
     throw new ApiError(403, "You are not authorized to perform this action");
 
   // owner cannot be removed
-  ensureNotOwner(project,targetAdminId)
+  ensureNotOwner(project, targetAdminId);
 
   // ensure target is actually an admin
-  ensureStillAdmin(project,targetAdminId)
+  ensureStillAdmin(project, targetAdminId);
   const totalAdmins = project.admin.length;
 
   // Case A: self-removal (no request object needed)
@@ -616,13 +616,13 @@ const approvePendingAdminRemovalHandler = asyncHandler(
       throw new ApiError(403, "You are not authorized to perform this action");
 
     // owner rejection
-    ensureNotOwner(project,targetAdminId)
+    ensureNotOwner(project, targetAdminId);
 
     // Find the relevant pending removal request
-    const request =findRemovalRequestOrThrow(project,targetAdminId)
+    const request = findRemovalRequestOrThrow(project, targetAdminId);
 
     // Verify target is still an admin
-     ensureStillAdmin(project,targetAdminId)
+    ensureStillAdmin(project, targetAdminId);
     // Prevent duplicate approvals
     const alreadyApproved = request.approvals.some(
       (id) => id.toString() === currentAdminId.toString()
@@ -697,14 +697,14 @@ const rejectPendingAdminRemovalHandler = asyncHandler(
       throw new ApiError(403, "You are not authorized to perform this action");
 
     // Owner safety
-    ensureNotOwner(project,targetAdminId)
+    ensureNotOwner(project, targetAdminId);
 
     // Find the relevant pending removal request
-    const request = findRemovalRequestOrThrow(project,targetAdminId);
+    const request = findRemovalRequestOrThrow(project, targetAdminId);
 
     // Verify target is still an admin
-    ensureStillAdmin(project,targetAdminId)
-  
+    ensureStillAdmin(project, targetAdminId);
+
     // Prevent conflicting actions
     const alreadyApproved = request.approvals.some(
       (id) => id.toString() === currentAdminId.toString()
@@ -743,7 +743,128 @@ const rejectPendingAdminRemovalHandler = asyncHandler(
   }
 );
 
+const adminRemoveMemberHandler = asyncHandler(async (req, res, next) => {
+  const adminId = req.user;
+  const targetMemberId = req.params.id;
+  const projectId = req.params.projectId;
 
+  // basic check
+  if (!adminId) {
+    throw new ApiError(400, "Please login to continue");
+  }
+  if (!projectId) {
+    throw new ApiError(400, "Invalid Project ID");
+  }
+  if (!targetMemberId) {
+    throw new ApiError(400, "Member id is required");
+  }
+
+  // project + admin check
+  const { project, isAdmin } = await checkProjectExistsAndIsAdmin(
+    projectId,
+    adminId,
+    true
+  );
+
+  if (!isAdmin) {
+    throw new ApiError(403, "you are not authorised to do so");
+  }
+
+  //owner safety
+  if (project.owner.toString() === targetMemberId.toString()) {
+    throw new ApiError(400, "Owner cannot be removed from his project");
+  }
+
+  // safeguard for himself
+  if (adminId.toString() === targetMemberId.toString()) {
+    throw new ApiError(400, "You cannot remove yourself from project members");
+  }
+
+  // ensure target is a member
+  const isMember = project.members.some((id) => {
+    return id.toString() === targetMemberId.toString();
+  });
+
+  if (!isMember) {
+    throw new ApiError(400, "User is not a project member");
+  }
+
+  // remove from members
+  project.members = project.members.filter((id) => {
+    return id.toString() !== targetMemberId.toString();
+  });
+
+  await project.save();
+
+  res.json(new ApiResponse(200, "Member removed Successfully", project));
+
+  // Todo : notify other about this
+});
+
+const memberLeavingProjectHandler = asyncHandler(async (req, res, next) => {
+  const userId = req.user;
+  const incomingUserId = req.params.userId;
+  const projectId = req.params.id;
+
+  // basic checks
+  if (!userId) {
+    throw new ApiError(400, "Please log in to continue");
+  }
+  if (!incomingUserId) {
+    throw new ApiError(400, "User ID is required");
+  }
+  if (!projectId) {
+    throw new ApiError(400, "Invalid project ID");
+  }
+
+  // check if user is leaving their own account
+  if (userId.toString() !== incomingUserId.toString()) {
+    throw new ApiError(403, "You can only leave a project for yourself");
+  }
+
+  // fetch project + check existence (no need admin check here)
+  const { project } = await checkProjectExistsAndIsAdmin(
+    projectId,
+    userId,
+    false
+  );
+
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  // safeguard: prevent admins from leaving via this route
+  const isUserAdmin = project.admin.some(
+    (id) => id.toString() === incomingUserId.toString()
+  );
+
+  if (isUserAdmin) {
+    throw new ApiError(
+      400,
+      "Admins cannot leave using this route. Please use the admin removal process."
+    );
+  }
+
+  // ensure user is actually a member
+  const isMember = project.members.some(
+    (id) => id.toString() === incomingUserId.toString()
+  );
+
+  if (!isMember) {
+    throw new ApiError(403, "You are not a member of this project");
+  }
+
+  // remove from members
+  project.members = project.members.filter(
+    (id) => id.toString() !== incomingUserId.toString()
+  );
+
+  await project.save();
+
+  // TODO: notify other members
+
+  res.json(new ApiResponse(200, "You left the project successfully", project));
+});
 
 module.exports = {
   createProjectHandler,
@@ -757,4 +878,6 @@ module.exports = {
   removeAdminHandler,
   approvePendingAdminRemovalHandler,
   rejectPendingAdminRemovalHandler,
+  adminRemoveMemberHandler,
+  memberLeavingProjectHandler,
 };
