@@ -1,6 +1,6 @@
 const express=require("express");
 const { verifyAccess } = require("../middlewares/auth");
-const { createProjectHandler, getMyProjects, getProjectDetails, updateProjectDetailsHandler, archiveProjectHandler,  makeAdminHandler, removeAdminHandler, rejectPendingArchiveRequestHandler, approvePendingArchiveRequestHandler, adminRemoveMemberHandler, memberLeavingProjectHandler } = require("../controllers/projectController");
+const { createProjectHandler, getMyProjects, getProjectDetails, updateProjectDetailsHandler, archiveProjectHandler,  makeAdminHandler, removeAdminHandler, rejectPendingArchiveRequestHandler, approvePendingArchiveRequestHandler, adminRemoveMemberHandler, memberLeavingProjectHandler, getMySubmissionsHandler } = require("../controllers/projectController");
 const { validate } = require("uuid");
 const { createProjectSchema, updateProjectDetailsSchema } = require("../validations/projectValidation");
 const projectRouter=express.Router;
@@ -50,8 +50,13 @@ projectRouter.post("/:id/adminRemoval/reject/:adminId",verifyAccess,rejectPendin
 projectRouter.delete("/:id/remove/member/:userId",verifyAccess,adminRemoveMemberHandler);
 
 
-// delete /projects/:id/leave-- Member leaves project (not fo   r admins).
+// delete /projects/:id/leave-- Member leaves project (not for admins).
 projectRouter.delete("/:id/leave/member/:userId",verifyAccess,memberLeavingProjectHandler)
+
+
+// GET /api/projects/:id/my-submissions  ---->
+projectRouter.get("/:id/my-submissions",verifyAccess,getMySubmissionsHandler)
+
 
 
 // transferOwnership route

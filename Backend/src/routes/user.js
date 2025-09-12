@@ -41,6 +41,7 @@ UserRouter.patch("/resetPassword", resetPasswordHandler);
 
 UserRouter.get("/me", verifyAccess, meRouteHandler);
 
+
 module.exports = {
   UserRouter,
 };

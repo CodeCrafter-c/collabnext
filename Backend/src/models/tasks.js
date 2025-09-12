@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 const { Project } = require("./projects");
 const { User } = require("./user");
 
-const taskSchema =
-  ({
+const taskSchema = mongoose.Schema(
+  {
     title: {
       type: String,
       required: true,
@@ -12,11 +12,11 @@ const taskSchema =
     description: {
       type: String,
       trim: true,
-      default:""
+      default: "",
     },
     status: {
       type: String,
-      enum: ["not started", "in progress", "completed", "blocked"],
+      enum: ["not started", "in progress", "completed", "submitted"],
       default: "not started",
     },
     priority: {
@@ -35,8 +35,6 @@ const taskSchema =
     },
     AssignedTo: {
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-      required: true,
-      validate: (v) => Array.isArray(v) && v.length > 0,
     },
 
     createdBy: {
@@ -48,15 +46,40 @@ const taskSchema =
       {
         submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         type: { type: String, enum: ["link", "file"], required: true },
-        value: { type: String, required: true }, // url/path
-        fileType: String, // pdf, docx, xlsx, image etc.
+        value: { type: String, required: true }, // S3 URL or link,
+        fileName: {
+          type: String,
+          required: function () {
+            return this.type === "file";
+          },
+        },
+        fileType: {
+          type: String,
+          required: function () {
+            return this.type === "file";
+          },
+        },
+        s3Key: {
+          type: String,
+          required: function () {
+            return this.type === "file";
+          },
+        },
+        status: {
+          type: String,
+          enum: ["pending", "submitted"],
+          default: function () {
+            return this.type === "file" ? "pending" : "submitted";
+          },
+        },
         submittedAt: { type: Date, default: Date.now },
       },
     ],
   },
   {
     timestamps: true,
-  });
+  }
+);
 
 const Task = mongoose.model("Task", taskSchema);
 

@@ -866,6 +866,61 @@ const memberLeavingProjectHandler = asyncHandler(async (req, res, next) => {
   res.json(new ApiResponse(200, "You left the project successfully", project));
 });
 
+const getMySubmissionsHandler = asyncHandler(async (req, res) => {
+  const userId = req.user;
+  const { id } = req.params;
+
+  if (!userId) throw new ApiError(400, "Please log in to continue");
+  if (!id) throw new ApiError(400, "Invalid Project ID");
+
+  // project check
+  const { project } = await checkProjectExistsAndIsAdmin(projectId);
+
+  const isMember = project.members.some(
+    (id) => id.toString() === userId.toString()
+  );
+  if (!isMember) throw new ApiError(403, "You are not a project member");
+
+  // aggregate tasks + submissions for this user
+  const mySubmissions = await Task.aggregate([
+    {
+      $match: {
+        project: new mongoose.Types.ObjectId(id), // tasks from this project
+        "submissions.submittedBy": new mongoose.Types.ObjectId(userId), // tasks where this user submitted
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        title: 1,
+        description: 1,
+        submissions: {
+          $filter: {
+            input: "$submissions",
+            as: "submission",
+            cond: { $eq: ["$$submission.submittedBy", new mongoose.Types.ObjectId(userId)] },
+          },
+        },
+      },
+    },
+  ]);
+
+  if (!mySubmissions.length) {
+    throw new ApiError(404, "No submissions found for this project");
+  }
+
+  return res.json(
+    new ApiResponse(
+      200,
+            "Fetched my submissions successfully",
+      {
+        projectTitle: project.title,
+        submissionsByTask: mySubmissions,
+      }
+    )
+  );
+});
+
 module.exports = {
   createProjectHandler,
   getMyProjects,
@@ -880,4 +935,5 @@ module.exports = {
   rejectPendingAdminRemovalHandler,
   adminRemoveMemberHandler,
   memberLeavingProjectHandler,
+  getMySubmissionsHandler
 };
