@@ -12,6 +12,10 @@ const { Task } = require("../../models/tasks");
 const { Max_SIZE_ALLOWED, ALLOWED_TYPES } = require("../../constants");
 const { isAllowed } = require("../../utils/fileType");
 
+// todo: message
+// todo:- voice chat
+// todo : webrtc
+
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {

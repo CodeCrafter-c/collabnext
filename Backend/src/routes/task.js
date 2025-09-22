@@ -36,7 +36,7 @@ taskRouter.delete("/:taskId",verifyAccess,deleteTaskHandler)
 
 // GET /projects/:projectId/tasks/:taskId/generate-upload-url  -->
 taskRouter.get("/:taskId/generate-upload-url",verifyAccess,getUploadUrlHandler)
-    
+
 // PATCH /projects/:projectId/tasks/:taskId/change-upload-status --> change uplolad status
 taskRouter.post(":taskId/change-upload-status",verifyAccess,changeUploadStatusHandler)
 

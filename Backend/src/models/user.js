@@ -1,6 +1,10 @@
 const mongoose=require("mongoose")
 const bcrypt=require("bcrypt");
 
+// todo: - captcha, Oauth
+// todo: - encryption & decryption of password
+// todo: - singalR
+
 const userSchema= mongoose.Schema({
     firstname:{
         type:String,
@@ -59,3 +63,4 @@ const User=mongoose.model("User",userSchema);
 module.exports={
     User
 }
+
